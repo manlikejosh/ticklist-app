@@ -3,6 +3,7 @@ interface Tick {
     area: string;
     date: Date;
     grade: string;
+    type?: string;
     attempts: number;
     send: boolean;
     description: string;
