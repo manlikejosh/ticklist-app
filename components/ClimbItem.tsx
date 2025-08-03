@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Image } from 'react-native';
 import { Note, Attempt } from '../types';
 
 type ClimbItemProps = {
@@ -44,34 +44,58 @@ const ClimbItem = ({
   onToggleExpand,
   onDeleteAttempt
 }: ClimbItemProps) => {
+  // Check if any attempt was sent to determine overall send status
+  const isSent = item.attempts.some(a => a.send);
+
   return (
     <TouchableOpacity 
-      style={[styles.noteItem, item.attempts.some(a => a.send) && styles.sentItem]}
+      style={[styles.noteItem, isSent && styles.sentItem]}
       onPress={() => onEdit(item)}
     >
-      <View style={styles.noteHeader}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.noteTitle}>{item.name}</Text>
-          <View style={styles.categoryContainer}>
-            <Text style={styles.categoryText}>
-              {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
-            </Text>
-          </View>
+      <View style={styles.mainContent}>
+        {/* Image Section */}
+        <View style={styles.imageContainer}>
+          {item.image ? (
+            <Image 
+              source={{ uri: item.image }} 
+              style={styles.climbImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>📷</Text>
+            </View>
+          )}
         </View>
-        <TouchableOpacity 
-          onPress={() => onDelete(item.id)}
-          style={styles.deleteButton}
-        >
-          <Text style={styles.deleteButtonText}>×</Text>
-        </TouchableOpacity>
+
+        {/* Text Content Section */}
+        <View style={styles.textContent}>
+          <View style={styles.noteHeader}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.noteTitle}>{item.name}</Text>
+              <View style={styles.categoryContainer}>
+                <Text style={styles.categoryText}>
+                  {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              onPress={() => onDelete(item.id)}
+              style={styles.deleteButton}
+            >
+              <Text style={styles.deleteButtonText}>×</Text>
+            </TouchableOpacity>
+          </View>
+          <Text>Area: {item.area}</Text>
+          <Text>Grade: {item.grade}</Text>
+          <Text>Total Attempts: {item.attempts.reduce((sum, a) => sum + a.attempts, 0)}</Text>
+          <Text style={[styles.statusText, isSent && styles.sentText]}>
+            Status: {isSent ? 'Sent' : 'Not Sent'}
+          </Text>
+          <Text>{item.description}</Text>
+        </View>
       </View>
-      <Text>Area: {item.area}</Text>
-      <Text>Grade: {item.grade}</Text>
-      <Text>Total Attempts: {item.attempts.reduce((sum, a) => sum + a.attempts, 0)}</Text>
-      <Text style={[styles.statusText, item.attempts.some(a => a.send) && styles.sentText]}>
-        Status: {item.attempts.some(a => a.send) ? 'Sent' : 'Not Sent'}
-      </Text>
-      <Text>{item.description}</Text>
+
       {item.attempts.length > 0 && (
         <View style={styles.attemptsContainer}>
           <TouchableOpacity 
@@ -106,6 +130,36 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     marginBottom: 10,
+  },
+  mainContent: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  imageContainer: {
+    width: 80,
+    height: 80,
+    marginRight: 15,
+  },
+  climbImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  placeholderText: {
+    fontSize: 24,
+  },
+  textContent: {
+    flex: 1,
   },
   noteHeader: {
     flexDirection: 'row',

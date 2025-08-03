@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Button, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ClimbItem from '../components/ClimbItem';
 import AddClimbModal from '../components/AddClimbModal';
 import AttemptModal from '../components/AttemptModal';
 import { Note, STORAGE_KEY, ClimbType } from '../types';
+
+type FilterType = 'all' | 'sent' | 'unsent';
 
 export default function App() {
   const [name, setName] = useState('');
@@ -26,6 +28,9 @@ export default function App() {
   const [currentAttempts, setCurrentAttempts] = useState('');
   const [attemptNotes, setAttemptNotes] = useState('');
   const [expandedClimbs, setExpandedClimbs] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<FilterType>('all');
+
+  console.log('Current modalVisible state:', modalVisible);
 
   useEffect(() => {
     loadClimbs();
@@ -74,6 +79,13 @@ export default function App() {
     setSend(false);
     setCurrentAttempts('');
     setAttemptNotes('');
+  };
+
+  const handleCategoryChange = (newCategory: ClimbType) => {
+    setCategory(newCategory);
+    // Set default grade for the new category
+    const defaultGrade = newCategory === ClimbType.BOULDER ? 'V0' : '5.0';
+    setGrade(defaultGrade);
   };
 
   const addNote = () => {
@@ -212,12 +224,50 @@ export default function App() {
     setExpandedClimbs(newExpanded);
   };
 
+  const getFilteredClimbs = () => {
+    switch (filter) {
+      case 'sent':
+        return notes.filter(climb => climb.attempts.some(a => a.send));
+      case 'unsent':
+        return notes.filter(climb => !climb.attempts.some(a => a.send));
+      default:
+        return notes;
+    }
+  };
+
+  const renderFilterButton = (filterType: FilterType, label: string) => (
+    <TouchableOpacity
+      style={[styles.filterButton, filter === filterType && styles.filterButtonActive]}
+      onPress={() => setFilter(filterType)}
+    >
+      <Text style={[styles.filterButtonText, filter === filterType && styles.filterButtonTextActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Ticklist</Text>
-      <Button title="New Climb" onPress={() => setModalVisible(true)} />
+      <TouchableOpacity 
+        style={styles.addButton}
+        onPress={() => {
+          console.log('Add button pressed, current modalVisible:', modalVisible);
+          setModalVisible(true);
+          console.log('setModalVisible(true) called');
+        }}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
+      
+      <View style={styles.filterContainer}>
+        {renderFilterButton('all', 'All')}
+        {renderFilterButton('sent', 'Sent')}
+        {renderFilterButton('unsent', 'Unsent')}
+      </View>
+
       <FlatList
-        data={notes}
+        data={getFilteredClimbs()}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ClimbItem
@@ -241,6 +291,7 @@ export default function App() {
           resetForm();
         }}
         onAdd={addNote}
+        isEdit={false}
         name={name}
         setName={setName}
         area={area}
@@ -248,14 +299,13 @@ export default function App() {
         grade={grade}
         setGrade={setGrade}
         category={category}
-        setCategory={setCategory}
+        setCategory={handleCategoryChange}
         description={description}
         setDescription={setDescription}
         image={image}
         setImage={setImage}
         video={video}
         setVideo={setVideo}
-
       />
       <AddClimbModal
         visible={editModalVisible}
@@ -265,6 +315,7 @@ export default function App() {
           resetForm();
         }}
         onAdd={saveEdit}
+        isEdit={true}
         name={name}
         setName={setName}
         area={area}
@@ -272,14 +323,13 @@ export default function App() {
         grade={grade}
         setGrade={setGrade}
         category={category}
-        setCategory={setCategory}
+        setCategory={handleCategoryChange}
         description={description}
         setDescription={setDescription}
         image={image}
         setImage={setImage}
         video={video}
         setVideo={setVideo}
-       
       />
       <AttemptModal
         visible={attemptModalVisible}
@@ -317,5 +367,57 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+  filterButtonText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 10,
+    left: '50%',
+    marginLeft: -10,
+    height: 50,
+    width: 50,
+    borderRadius: 25,
+    backgroundColor: '#007bff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    elevation: 5,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 30,
+ 
+    fontWeight: 'bold',
   },
 }); 

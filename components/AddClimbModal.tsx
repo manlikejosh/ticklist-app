@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { V_GRADES, ClimbType } from '../types';
+import { V_GRADES, YDS_GRADES, ClimbType } from '../types';
 
 type AddClimbModalProps = {
   visible: boolean;
   onClose: () => void;
   onAdd: () => void;
+  isEdit?: boolean;
   name: string;
   setName: (value: string) => void;
   area: string;
@@ -27,6 +28,7 @@ const AddClimbModal = ({
   visible,
   onClose,
   onAdd,
+  isEdit = false,
   name,
   setName,
   area,
@@ -42,6 +44,28 @@ const AddClimbModal = ({
   video,
   setVideo,
 }: AddClimbModalProps) => {
+  console.log('Modal visible:', visible);
+  
+  // Get the appropriate grade options based on category
+  const getGradeOptions = () => {
+    switch (category) {
+      case ClimbType.BOULDER:
+        return V_GRADES;
+      case ClimbType.SPORT:
+      case ClimbType.TRAD:
+        return YDS_GRADES;
+      default:
+        return V_GRADES;
+    }
+  };
+
+  // Reset grade when category changes
+  const handleCategoryChange = (newCategory: ClimbType) => {
+    setCategory(newCategory);
+    // Set default grade for the new category
+    const gradeOptions = newCategory === ClimbType.BOULDER ? V_GRADES : YDS_GRADES;
+    setGrade(gradeOptions[0]);
+  };
 
   return (
     <Modal
@@ -52,33 +76,31 @@ const AddClimbModal = ({
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalHeader}>Add New Climb</Text>
-          {/* Name */}
+          <Text style={styles.modalHeader}>
+            {isEdit ? 'Edit Climb' : 'Add New Climb'}
+          </Text>
+          
           <TextInput
             style={styles.input}
             placeholder="Name"
             value={name}
             onChangeText={setName}
           />
-
-          {/* Area */}
           <TextInput
             style={styles.input}
             placeholder="Area"
             value={area}
             onChangeText={setArea}
           />
-
-          {/* Category */}
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={category}
               style={styles.picker}
               itemStyle={styles.pickerItem}
-              onValueChange={(itemValue: ClimbType) => setCategory(itemValue)}
+              onValueChange={handleCategoryChange}
             >
               {Object.values(ClimbType).map((type) => (
-                <Picker.Item  key={type} label={type.charAt(0).toUpperCase() + type.slice(1)} value={type} />
+                <Picker.Item key={type} label={type.charAt(0).toUpperCase() + type.slice(1)} value={type} />
               ))}
             </Picker>
           </View>
@@ -87,14 +109,13 @@ const AddClimbModal = ({
               selectedValue={grade}
               style={styles.picker}
               itemStyle={styles.pickerItem}
-              onValueChange={(itemValue: string) => setGrade(itemValue)}
+              onValueChange={setGrade}
             >
-              {V_GRADES.map((grade) => (
-                <Picker.Item key={grade} label={grade} value={grade} />
+              {getGradeOptions().map((gradeOption) => (
+                <Picker.Item key={gradeOption} label={gradeOption} value={gradeOption} />
               ))}
             </Picker>
           </View>
-          {/* Description */}
           <TextInput
             style={styles.input}
             placeholder="Description"
@@ -102,27 +123,25 @@ const AddClimbModal = ({
             onChangeText={setDescription}
             multiline
           />
-          {/* Image */}
           <TextInput
             style={styles.input}
             placeholder="Image URL (optional)"
             value={image}
             onChangeText={setImage}
           />
-          {/* Video */}
           <TextInput
             style={styles.input}
             placeholder="Video URL (optional)"
             value={video}
             onChangeText={setVideo}
           />
-          {/* Buttons */}
+          
           <View style={styles.modalButtons}>
             <View style={styles.buttonContainer}>
               <Button title="Cancel" onPress={onClose} />
             </View>
             <View style={styles.buttonContainer}>
-              <Button title="Add" onPress={onAdd} />
+              <Button title={isEdit ? "Save" : "Add"} onPress={onAdd} />
             </View>
           </View>
         </View>
@@ -137,6 +156,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    
   },
   modalContent: {
     width: '90%',
@@ -158,6 +178,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
   input: {
     borderWidth: 1,
